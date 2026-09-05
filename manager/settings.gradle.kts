@@ -18,5 +18,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "9178su"
+rootProject.name = "n9178su"
 include(":app")
