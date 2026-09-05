@@ -147,6 +147,16 @@ fun HomePagerMaterial(
                 actions = actions,
             )
             InfoCard(systemInfo = state.systemInfo)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                Text(
+                    text = stringResource(R.string.home_joke_banner),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             Spacer(Modifier.height(bottomInnerPadding))
         }
     }

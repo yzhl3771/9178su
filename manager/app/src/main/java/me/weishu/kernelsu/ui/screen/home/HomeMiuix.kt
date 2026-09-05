@@ -182,6 +182,16 @@ fun HomePagerMiuix(
                             systemInfo = state.systemInfo,
                             modifier = Modifier.fillMaxWidth(),
                         )
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.home_joke_banner),
+                                color = MiuixTheme.colorScheme.onBackground,
+                                fontSize = 13.sp,
+                            )
+                        }
                         Spacer(Modifier.height(bottomInnerPadding))
                     }
                 }

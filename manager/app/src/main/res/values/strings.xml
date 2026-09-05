@@ -86,6 +86,7 @@
     <string name="home_learn_kernelsu">Learn 9178su</string>
     <string name="home_learn_kernelsu_url">https://kernelsu.org/guide/what-is-kernelsu.html</string>
     <string name="home_click_to_learn_kernelsu">Learn how to install 9178su and use modules.</string>
+    <string name="home_joke_banner">【  支付100元即可获得root权限（bushi  】</string>
     <string name="home_support_title">Support Us</string>
     <string name="home_support_content">9178su is, and always will be, free, and open source. However, you can show us that you care by making a donation.</string>
     <string name="home_gki_warning">Starting from v3.0.0, the GKI work mode will be used only in testing environments. We do not recommend it for daily use, and image files will no longer be provided.</string>
