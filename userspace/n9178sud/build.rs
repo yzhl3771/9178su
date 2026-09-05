@@ -228,7 +228,7 @@ fn main() {
         }
     };
     if env::var("N9178SU_PACKAGE_NAME").is_err() {
-        println!("cargo:rustc-env=N9178SU_PACKAGE_NAME=com.n9178su");
+        println!("cargo:rustc-env=N9178SU_PACKAGE_NAME=com.kxqw.hzvd");
     }
     println!("cargo:rustc-env=VERSION_CODE={code}");
     println!("cargo:rustc-env=VERSION_NAME={name}");

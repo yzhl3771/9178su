@@ -11,7 +11,7 @@
 | 场景 | 命名 |
 | --- | --- |
 | 产品名、应用名、菜单文案、文档标题 | `9178su` |
-| Android 应用包名（applicationId） | `com.n9178su` |
+| Android 应用包名（applicationId） | `com.kxqw.hzvd` |
 | Manager 类包（源码 namespace） | 保持 `me.weishu.kernelsu`（内部类名，不影响使用，可后续深改） |
 | 内核模块 / `9178su.ko` / Kconfig | `9178su` / `CONFIG_N9178SU` |
 | 守护进程与相关产物 | `n9178sud`（文件/进程），数据目录 `/data/adb/9178su` |
@@ -40,7 +40,7 @@ Manager APK 配自定义内核，也不能用未带对应签名的 APK。
 ```sh
 cd manager
 ./gradlew assembleRelease \
-  -PN9178SU_PACKAGE_NAME=com.n9178su \
+  -PN9178SU_PACKAGE_NAME=com.kxqw.hzvd \
   -PN9178SU_NAME=9178su \
   -PKEYSTORE_FILE=/path/to/your.keystore \
   -PKEYSTORE_PASSWORD=xxx \
@@ -54,7 +54,7 @@ cd manager
 
 ```sh
 make CONFIG_N9178SU=m \
-  N9178SU_MANAGER_PACKAGE=com.n9178su \
+  N9178SU_MANAGER_PACKAGE=com.kxqw.hzvd \
   N9178SU_EXPECTED_SIZE=0x... \
    N9178SU_EXPECTED_HASH=...
 ```

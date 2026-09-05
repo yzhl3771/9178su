@@ -182,10 +182,6 @@ fun HomePagerMiuix(
                             systemInfo = state.systemInfo,
                             modifier = Modifier.fillMaxWidth(),
                         )
-                        SupportLinks(
-                            onOpenUrl = actions.onOpenUrl,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
                         Spacer(Modifier.height(bottomInnerPadding))
                     }
                 }
@@ -630,10 +626,6 @@ private fun HomeScreenPreviewContent(
             )
             InfoCard(
                 systemInfo = previewSystemInfo.copy(selinuxStatus = selinuxStatus),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            SupportLinks(
-                onOpenUrl = {},
                 modifier = Modifier.fillMaxWidth(),
             )
         }
