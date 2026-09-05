@@ -12,6 +12,34 @@ use rustix::{
     },
 };
 
+#[cfg(target_os = "android")]
+unsafe extern "C" {
+    fn fork() -> i32;
+}
+
+fn persist_load_error(msg: &str) {
+    // Best effort: also keep a copy in the rootfs ramdisk.
+    let _ = std::fs::write("/9178su_load_error.txt", msg);
+
+    #[cfg(target_os = "android")]
+    unsafe {
+        // Fork a helper so it can keep running while the real init takes over.
+        // It waits for /data to be available and then saves the error where
+        // adb shell can read it.
+        if fork() == 0 {
+            for _ in 0..300 {
+                if std::path::Path::new("/data/local/tmp").is_dir() {
+                    if std::fs::write("/data/local/tmp/9178su_load_error.log", msg).is_ok() {
+                        break;
+                    }
+                }
+                std::thread::sleep(std::time::Duration::from_secs(1));
+            }
+            std::process::exit(0);
+        }
+    }
+}
+
 struct AutoUmount {
     mountpoints: Vec<String>,
 }
@@ -108,7 +136,9 @@ pub fn init() -> Result<()> {
     } else {
         log::info!("Loading 9178su.ko..");
         if let Err(e) = load_module_from_path("/9178su.ko") {
-            log::error!("Cannot load 9178su.ko: {:?}", e);
+            let msg = format!("Cannot load 9178su.ko: {:?}\n", e);
+            log::error!("{}", msg.trim_end());
+            persist_load_error(&msg);
         }
     }
 
