@@ -103,7 +103,7 @@ pub fn init() -> Result<()> {
     // This relies on the fact that we have /proc mounted
     unlimit_kmsg();
 
-    if ksuinit::has_kernelsu() {
+    if n9178suinit::has_kernelsu() {
         log::info!("9178su may be already loaded in kernel, skip!");
     } else {
         log::info!("Loading 9178su.ko..");
@@ -132,5 +132,5 @@ fn load_module_from_path(path: &str) -> Result<()> {
     let params = std::fs::read("/n9178su_config").unwrap_or_default();
     let params = unsafe { CString::from_vec_unchecked(params) };
     log::info!("load 9178su with params {params:?}");
-    ksuinit::load_module(&buffer, &params)
+    n9178suinit::load_module(&buffer, &params)
 }
