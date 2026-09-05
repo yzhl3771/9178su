@@ -1,0 +1,71 @@
+name: Release
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build-manager:
+    uses: ./.github/workflows/build-manager.yml
+    secrets: inherit
+  release:
+    needs:
+      - build-manager
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+
+      - name: Rename n9178sud
+        run: |
+          mkdir -p n9178sud
+          for dir in ./n9178sud-*; do
+            if [ -d "$dir" ]; then
+                echo "----- Rename $dir -----"
+                n9178sud_platform_name=$(basename "$dir")
+                if [ -f "$dir/n9178sud" ]; then
+                  mv "$dir/n9178sud" "n9178sud/$n9178sud_platform_name"
+                elif [ -f "$dir/n9178sud.exe" ]; then
+                  mv "$dir/n9178sud.exe" "n9178sud/$n9178sud_platform_name.exe"
+                fi
+            fi
+          done
+
+      - name: Rename n9178suinit
+        run: |
+          mkdir -p n9178suinit
+          for dir in ./n9178suinit-*; do
+            if [ -d "$dir" ]; then
+                echo "----- Rename $dir -----"
+                n9178suinit_platform_name=$(basename "$dir")
+                if [ -f "$dir/n9178suinit" ]; then
+                  mv "$dir/n9178suinit" "n9178suinit/$n9178suinit_platform_name"
+                fi
+            fi
+          done
+
+      - name: Rename lkm
+        run: |
+          mkdir -p lkm
+          for dir in ./*-android*-lkm; do
+            if [ -d "$dir" ]; then
+                echo "----- Rename $dir -----"
+                lkm_platform_name=$(basename "$dir")
+                lkm_platform_name="lkm-${lkm_platform_name%-lkm}_9178su.ko"
+                KO="$(ls $dir/*_9178su.ko)"
+                mv "$KO" "lkm/$lkm_platform_name"
+            fi
+          done
+
+      - name: Display structure of downloaded files
+        run: ls -R
+
+      - name: release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            manager/*.apk
+            lkm/lkm-*_9178su.ko
+            n9178sud/n9178sud-*
+            n9178suinit/*

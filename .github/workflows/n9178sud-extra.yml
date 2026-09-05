@@ -1,0 +1,72 @@
+name: Build n9178sud with cross
+on:
+  workflow_call:
+    inputs:
+      target:
+        required: true
+        type: string
+      os:
+        required: false
+        type: string
+        default: ubuntu-latest
+      pack_lkm:
+        required: false
+        type: boolean
+        default: false
+      pack_n9178suinit:
+        required: false
+        type: boolean
+        default: false
+jobs:
+  build:
+    runs-on: ${{ inputs.os }}
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v8
+    
+    - name: Prepare LKM files
+      if: ${{ inputs.pack_lkm }}
+      run: |
+        cp aarch64-android*-lkm/*_9178su.ko ./userspace/n9178sud/bin/aarch64/
+        cp x86_64-android*-lkm/*_9178su.ko ./userspace/n9178sud/bin/x86_64/
+    
+    - name: Prepare n9178suinit
+      if: ${{ inputs.pack_n9178suinit }}
+      run: |
+        mv n9178suinit-aarch64/n9178suinit ./userspace/n9178sud/bin/aarch64/
+        mv n9178suinit-x86_64/n9178suinit ./userspace/n9178sud/bin/x86_64/
+        
+    - name: Setup rustup
+      run: |
+        rustup update stable
+        if [[ ${{ inputs.target }} == *"-apple-darwin" ]]; then
+          rustup target add ${{ inputs.target }}
+        fi
+    - uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: userspace/n9178sud
+        cache-targets: false
+        cache-bin: false
+
+    - name: Install cross
+      run: |
+        RUSTFLAGS="" cargo install cross --git https://github.com/cross-rs/cross --rev 66845c1
+
+    - name: Assemble LKM bootstrap
+      run: |
+        clang --target=aarch64-linux-gnu -c -nostdlib \
+          -o userspace/n9178sud/.lkm_image_bootstrap.o \
+          userspace/n9178sud/src/lkm_image_bootstrap.S
+
+    - name: Build n9178sud
+      run: CROSS_NO_WARNINGS=0 cross build --target ${{ inputs.target }} --release --manifest-path ./userspace/n9178sud/Cargo.toml
+
+    - name: Upload n9178sud artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: n9178sud-${{ inputs.target }}
+        path: target/${{ inputs.target }}/release/n9178sud*

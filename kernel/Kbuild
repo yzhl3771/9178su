@@ -1,0 +1,165 @@
+9178su-objs := core/init.o
+
+9178su-objs += feature/kernel_umount.o
+9178su-objs += feature/sulog.o
+9178su-objs += feature/sucompat.o
+
+9178su-objs += hook/lsm_hook.o
+9178su-objs += hook/setuid_hook.o
+9178su-objs += hook/syscall_event_bridge.o
+9178su-objs += hook/syscall_hook_manager.o
+9178su-objs += hook/tp_marker.o
+ifeq ($(CONFIG_ARM64),y)
+9178su-objs += hook/arm64/patch_memory.o
+9178su-objs += hook/arm64/syscall_hook.o
+else ifeq ($(CONFIG_X86_64),y)
+9178su-objs += hook/x86_64/patch_memory.o
+9178su-objs += hook/x86_64/syscall_hook.o
+endif
+
+9178su-objs += infra/file_wrapper.o
+9178su-objs += infra/event_queue.o
+9178su-objs += infra/seccomp_cache.o
+9178su-objs += infra/su_mount_ns.o
+9178su-objs += infra/symbol_resolver.o
+
+ifneq ($(CONFIG_N9178SU_DISABLE_MANAGER),y)
+9178su-objs += manager/apk_sign.o
+9178su-objs += manager/pkg_observer.o
+9178su-objs += manager/throne_tracker.o
+endif
+
+9178su-objs += policy/allowlist.o
+9178su-objs += policy/app_profile.o
+9178su-objs += policy/feature.o
+
+9178su-objs += runtime/boot_event.o
+9178su-objs += runtime/ksud_integration.o
+
+9178su-objs += selinux/selinux.o
+9178su-objs += selinux/rules.o
+9178su-objs += selinux/sepolicy.o
+
+9178su-objs += sulog/event.o
+9178su-objs += sulog/fd.o
+
+9178su-objs += supercall/dispatch.o
+9178su-objs += supercall/perm.o
+9178su-objs += supercall/supercall.o
+
+9178su-objs += feature/adb_root.o
+
+9178su-objs += feature/selinux_hide.o
+
+ifdef KBUILD_EXTMOD
+ifeq ($(CONFIG_N9178SU_DISABLE_MANAGER),y)
+ccflags-y += -DCONFIG_N9178SU_DISABLE_MANAGER=1
+endif
+ifeq ($(CONFIG_N9178SU_DISABLE_POLICY),y)
+ccflags-y += -DCONFIG_N9178SU_DISABLE_POLICY=1
+endif
+ifeq ($(CONFIG_N9178SU_DEBUG),y)
+ccflags-y += -DCONFIG_N9178SU_DEBUG=1
+endif
+ifeq ($(CONFIG_N9178SU_X86_PATCH_SYSCALL_DISPATCHER),y)
+ccflags-y += -DCONFIG_N9178SU_X86_PATCH_SYSCALL_DISPATCHER=1
+endif
+endif
+
+ccflags-y += -I$(srctree)/security/selinux -I$(srctree)/security/selinux/include
+ccflags-y += -I$(objtree)/security/selinux -include $(srctree)/include/uapi/asm-generic/errno.h
+
+ifneq ($(KBUILD_EXTMOD),)
+# 6.18 exports the external module source as srcroot when M/MO are used.
+ifneq ($(srcroot),)
+N9178SU_KERNEL_DIR := $(srcroot)
+endif
+endif
+ifndef N9178SU_KERNEL_DIR
+ifeq ($(filter /%,$(src)),)
+N9178SU_KERNEL_DIR := $(srctree)/$(src)
+else
+N9178SU_KERNEL_DIR := $(src)
+endif
+endif
+
+ccflags-y += -I$(N9178SU_KERNEL_DIR) -I$(N9178SU_KERNEL_DIR)/include
+
+obj-$(CONFIG_N9178SU) += 9178su.o
+
+MDIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+
+# Workaround bazel
+# https://github.com/tiann/9178su/pull/316#issuecomment-1479043219
+GIT := $(shell PATH="$$PATH":/usr/bin:/usr/local/bin which git)
+ifneq ($(GIT),)
+# Check if this is a git repository
+# Try to detect Git repo intelligently
+GIT_ROOT := $(shell cd $(MDIR) && $(GIT) rev-parse --show-toplevel 2>/dev/null)
+ifneq ($(GIT_ROOT),)
+KERNEL_GIT_ROOT := $(shell cd $(srctree) && $(GIT) rev-parse --show-toplevel 2>/dev/null)
+ifneq ($(GIT_ROOT),$(KERNEL_GIT_ROOT))
+# Only set version if it's a different repo from kernel
+$(shell cd $(GIT_ROOT) && [ -f .git/shallow ] && $(GIT) fetch --unshallow 2>/dev/null || true)
+N9178SU_GIT_VERSION := $(shell cd $(GIT_ROOT) && $(GIT) rev-list --count HEAD 2>/dev/null)
+N9178SU_GIT_VERSION_VALID := 1
+$(info -- 9178su: Git repo detected at $(GIT_ROOT))
+endif
+endif
+else
+$(warning -- 9178su: Git not detected, make sure git is installed in your PATH!)
+endif
+
+
+# Calculate version if git version is available
+ifdef N9178SU_GIT_VERSION_VALID
+# ksu_version: major * 10000 + git version + 200 for historical reasons
+$(eval N9178SU_VERSION=$(shell expr 30000 + $(N9178SU_GIT_VERSION)))
+$(info -- 9178su version: $(N9178SU_VERSION))
+ccflags-y += -DN9178SU_VERSION=$(N9178SU_VERSION)
+else
+# If there is no .git directory, use default version
+$(warning "N9178SU_GIT_VERSION not defined! It is better to make 9178su a git repository!")
+ccflags-y += -DN9178SU_VERSION=16
+endif
+
+N9178SU_NEW_DCACHE_FLUSH := $(shell grep -q __flush_dcache_area $(srctree)/arch/arm64/include/asm/cacheflush.h ; echo $$?)
+$(info -- N9178SU_NEW_DCACHE_FLUSH: $(N9178SU_NEW_DCACHE_FLUSH))
+
+
+ifndef N9178SU_EXPECTED_SIZE
+N9178SU_EXPECTED_SIZE := 0x057e
+endif
+
+ifndef N9178SU_EXPECTED_HASH
+N9178SU_EXPECTED_HASH := 841df4bd093f42b907b5e49f2b742ba713b7cae882df1379fb56eb8293041746
+endif
+
+ifndef N9178SU_MANAGER_PACKAGE
+N9178SU_MANAGER_PACKAGE := com.n9178su
+endif
+ccflags-y += -DN9178SU_MANAGER_PACKAGE=\"$(N9178SU_MANAGER_PACKAGE)\"
+$(info -- 9178su Manager package name: $(N9178SU_MANAGER_PACKAGE))
+
+$(info -- 9178su Manager signature size: $(N9178SU_EXPECTED_SIZE))
+$(info -- 9178su Manager signature hash: $(N9178SU_EXPECTED_HASH))
+
+ccflags-y += -DEXPECTED_SIZE=$(N9178SU_EXPECTED_SIZE)
+ccflags-y += -DEXPECTED_HASH=\"$(N9178SU_EXPECTED_HASH)\"
+
+ifdef N9178SU_EXPECTED_SIZE2
+ifndef N9178SU_EXPECTED_HASH2
+$(error N9178SU_EXPECTED_HASH2 must be set when N9178SU_EXPECTED_SIZE2 is set)
+endif
+ccflags-y += -DEXPECTED_SIZE2=$(N9178SU_EXPECTED_SIZE2)
+ccflags-y += -DEXPECTED_HASH2=\"$(N9178SU_EXPECTED_HASH2)\"
+$(info -- 9178su Manager signature size2: $(N9178SU_EXPECTED_SIZE2))
+$(info -- 9178su Manager signature hash2: $(N9178SU_EXPECTED_HASH2))
+endif
+
+ccflags-y += -DN9178SU_NEW_DCACHE_FLUSH=$(N9178SU_NEW_DCACHE_FLUSH)
+
+ccflags-y += -Wno-strict-prototypes -Wno-int-conversion -Wno-gcc-compat -Wno-missing-prototypes
+ccflags-y += -Wno-declaration-after-statement -Wno-unused-function
+
+# Keep a new line here!! Because someone may append config

@@ -1,0 +1,68 @@
+name: Build n9178sud
+on:
+  workflow_call:
+    inputs:
+      target:
+        required: true
+        type: string
+      pack_lkm:
+        required: false
+        type: boolean
+        default: false
+      pack_n9178suinit:
+        required: false
+        type: boolean
+        default: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v8
+    
+    - name: Prepare LKM files
+      if: ${{ inputs.pack_lkm }}
+      run: |
+        cp aarch64-android*-lkm/*_9178su.ko ./userspace/n9178sud/bin/aarch64/
+        cp x86_64-android*-lkm/*_9178su.ko ./userspace/n9178sud/bin/x86_64/
+    
+    - name: Prepare n9178suinit
+      if: ${{ inputs.pack_n9178suinit }}
+      run: |
+        mv n9178suinit-aarch64/n9178suinit ./userspace/n9178sud/bin/aarch64/
+        mv n9178suinit-x86_64/n9178suinit ./userspace/n9178sud/bin/x86_64/
+        
+    - name: Setup rustup
+      run: |
+        rustup update stable
+        rustup target add ${{ inputs.target }}
+
+    - uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: userspace/n9178sud
+        cache-targets: false
+
+    - uses: nttld/setup-ndk@v1
+      id: setup-ndk
+      with:
+        ndk-version: r29
+
+    - name: Build n9178sud
+      env:
+        ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+      run: |
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          export N9178SU_PACKAGE_NAME="com.n9178su.pr"
+        fi
+        source .github/scripts/setup-rust-build.sh ${{ inputs.target }} 26
+        cargo build --target $TRIPLE --release --manifest-path ./userspace/n9178sud/Cargo.toml
+
+    - name: Upload n9178sud artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: n9178sud-${{ inputs.target }}
+        path: target/${{ inputs.target }}/release/n9178sud

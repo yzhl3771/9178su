@@ -1,0 +1,26 @@
+{
+  "name": "9178su",
+  "version": "3.0.2",
+  "description": "Library for 9178su's module WebUI",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "test": "npm run test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/9178su/9178su.git"
+  },
+  "keywords": [
+    "su",
+    "9178su",
+    "module",
+    "webui"
+  ],
+  "author": "weishu",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/9178su/9178su/issues"
+  },
+  "homepage": "https://github.com/9178su/9178su#readme"
+}
