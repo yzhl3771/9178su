@@ -316,10 +316,10 @@ jobs:
             -t release \
             -a arm64-v8a \
             -a x86_64 \
-            -K "$SIGN_KEYSTORE_FILE" \
-            -A "$SIGN_KEY_ALIAS" \
-            -P "$SIGN_KEYSTORE_PASSWORD" \
-            -S "$SIGN_KEY_PASSWORD" \
+            --keystore-path="$SIGN_KEYSTORE_FILE" \
+            --key-alias="$SIGN_KEY_ALIAS" \
+            --keystore-pass="$SIGN_KEYSTORE_PASSWORD" \
+            --key-pass="$SIGN_KEY_PASSWORD" \
             --strip
 
       - name: Upload build artifact
