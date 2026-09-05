@@ -184,7 +184,7 @@ fun HomePagerMiuix(
                         )
                         Box(
                             modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.CenterHorizontally,
+                            contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 text = stringResource(R.string.home_joke_banner),
