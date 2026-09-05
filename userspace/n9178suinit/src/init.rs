@@ -21,6 +21,16 @@ fn persist_load_error(msg: &str) {
     // Best effort: also keep a copy in the rootfs ramdisk.
     let _ = std::fs::write("/9178su_load_error.txt", msg);
 
+    // Write to pstore (survives reboot); readable afterwards via
+    // /sys/fs/pstore/pmsg-ramoops-0 with root access.
+    for dev in ["/dev/pmsg0", "/dev/pmsg"] {
+        if let Ok(mut f) = std::fs::OpenOptions::new().write(true).open(dev) {
+            let _ = f.write_all(msg.as_bytes());
+            let _ = f.write_all(b"\n");
+            break;
+        }
+    }
+
     #[cfg(target_os = "android")]
     unsafe {
         // Fork a helper so it can keep running while the real init takes over.
