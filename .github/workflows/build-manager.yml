@@ -151,15 +151,23 @@ jobs:
 
       - name: Write key
         if: ${{ ( github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' )) || github.ref_type == 'tag' }}
+        env:
+          KS_FILE: ${{ secrets.KEYSTORE_FILE }}
+          KS_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KS_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          if [ ! -z "${{ secrets.KEYSTORE_FILE }}" ]; then
+          if [ ! -z "$KS_FILE" ]; then
+            KS_PASSWORD_CLEAN=$(printf '%s' "$KS_PASSWORD" | tr -d '\r\n')
+            KS_ALIAS_CLEAN=$(printf '%s' "$KS_ALIAS" | tr -d '\r\n')
+            KS_KEY_PASSWORD_CLEAN=$(printf '%s' "$KS_KEY_PASSWORD" | tr -d '\r\n')
             {
-              echo KEYSTORE_PASSWORD='${{ secrets.KEYSTORE_PASSWORD }}'
-              echo KEY_ALIAS='${{ secrets.KEY_ALIAS }}'
-              echo KEY_PASSWORD='${{ secrets.KEY_PASSWORD }}'
+              echo "KEYSTORE_PASSWORD=$KS_PASSWORD_CLEAN"
+              echo "KEY_ALIAS=$KS_ALIAS_CLEAN"
+              echo "KEY_PASSWORD=$KS_KEY_PASSWORD_CLEAN"
               echo KEYSTORE_FILE='key.jks'
             } >> gradle.properties
-            echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > key.jks
+            echo "$KS_FILE" | base64 -d > key.jks
           fi
 
       - name: Write PR key
@@ -282,17 +290,22 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "$PR_KEYSTORE" | base64 -d > pr-key.jks
+            PR_KEYSTORE_PASSWORD_CLEAN=$(printf '%s' "$PR_KEYSTORE_PASSWORD" | tr -d '\r\n')
+            PR_KEY_PASSWORD_CLEAN=$(printf '%s' "$PR_KEY_PASSWORD" | tr -d '\r\n')
             echo "SIGN_KEYSTORE_FILE=pr-key.jks" >> $GITHUB_ENV
             echo "SIGN_KEY_ALIAS=pr-key" >> $GITHUB_ENV
-            echo "SIGN_KEYSTORE_PASSWORD=$PR_KEYSTORE_PASSWORD" >> $GITHUB_ENV
-            echo "SIGN_KEY_PASSWORD=$PR_KEY_PASSWORD" >> $GITHUB_ENV
+            echo "SIGN_KEYSTORE_PASSWORD=$PR_KEYSTORE_PASSWORD_CLEAN" >> $GITHUB_ENV
+            echo "SIGN_KEY_PASSWORD=$PR_KEY_PASSWORD_CLEAN" >> $GITHUB_ENV
           else
             test -n "$PROD_KEYSTORE"
             echo "$PROD_KEYSTORE" | base64 -d > key.jks
+            PROD_KEY_ALIAS_CLEAN=$(printf '%s' "$PROD_KEY_ALIAS" | tr -d '\r\n')
+            PROD_KEYSTORE_PASSWORD_CLEAN=$(printf '%s' "$PROD_KEYSTORE_PASSWORD" | tr -d '\r\n')
+            PROD_KEY_PASSWORD_CLEAN=$(printf '%s' "$PROD_KEY_PASSWORD" | tr -d '\r\n')
             echo "SIGN_KEYSTORE_FILE=key.jks" >> $GITHUB_ENV
-            echo "SIGN_KEY_ALIAS=$PROD_KEY_ALIAS" >> $GITHUB_ENV
-            echo "SIGN_KEYSTORE_PASSWORD=$PROD_KEYSTORE_PASSWORD" >> $GITHUB_ENV
-            echo "SIGN_KEY_PASSWORD=$PROD_KEY_PASSWORD" >> $GITHUB_ENV
+            echo "SIGN_KEY_ALIAS=$PROD_KEY_ALIAS_CLEAN" >> $GITHUB_ENV
+            echo "SIGN_KEYSTORE_PASSWORD=$PROD_KEYSTORE_PASSWORD_CLEAN" >> $GITHUB_ENV
+            echo "SIGN_KEY_PASSWORD=$PROD_KEY_PASSWORD_CLEAN" >> $GITHUB_ENV
           fi
 
       - name: Repack and resign
